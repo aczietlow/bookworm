@@ -21,7 +21,7 @@ type book struct {
 
 func main() {
 	// book := "The minority report"
-	bookISBN := "9781942788812"
+	bookISBN := "9780756419189"
 	bookData := getBookByID(bookISBN)
 	prettyPrint(bookData)
 }
