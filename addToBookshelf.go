@@ -8,6 +8,7 @@ import (
 
 	"github.com/aczietlow/addToBookshelf/api"
 	"github.com/aczietlow/addToBookshelf/net"
+	"github.com/aczietlow/addToBookshelf/pkg/openlibraryapi"
 )
 
 type book struct {
@@ -24,6 +25,13 @@ func main() {
 	bookISBN := "9780756419189"
 	bookData := getBookByID(bookISBN)
 	prettyPrint(bookData)
+
+	openLibClient := openlibraryapi.NewClient()
+	conf := &config{
+		apiClient: openLibClient,
+	}
+	startCli(conf)
+
 }
 
 func getBookByID(id string) api.BookResponse {
@@ -32,7 +40,7 @@ func getBookByID(id string) api.BookResponse {
 	var libraryURL string = "https://openlibrary.org/api/volumes/brief/isbn/" + id + ".json"
 	req, err := http.NewRequest("GET", libraryURL, nil)
 	if err != nil {
-		fmt.Printf("Request failed: %w", err)
+		fmt.Printf("Request failed: %s", err)
 	}
 
 	client := &http.Client{
@@ -44,7 +52,7 @@ func getBookByID(id string) api.BookResponse {
 
 	res, err := client.Do(req)
 	if err != nil {
-		fmt.Printf("Response failed: %w", err)
+		fmt.Printf("Response failed: %s", err)
 	}
 	defer res.Body.Close()
 
