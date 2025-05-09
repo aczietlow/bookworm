@@ -23,7 +23,7 @@ type cliCommand struct {
 
 func startCli(conf *config) {
 	scanner := bufio.NewScanner(os.Stdin)
-	registry := registerCommands()
+	registry = registerCommands()
 	fmt.Print("Bookworm > ")
 	for scanner.Scan() {
 		userInput := cleanInput(scanner.Text())

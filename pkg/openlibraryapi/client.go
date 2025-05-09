@@ -2,14 +2,17 @@ package openlibraryapi
 
 import (
 	"net/http"
+	"time"
 
 	"github.com/aczietlow/bookworm/net"
+	"github.com/aczietlow/bookworm/pkg/bookcache"
 )
 
 const baseURL = "https://openlibrary.org"
 
 type Client struct {
 	httpClient http.Client
+	cache      bookcache.Cache
 }
 
 type Transport struct {
@@ -17,7 +20,7 @@ type Transport struct {
 	Transport http.RoundTripper
 }
 
-func NewClient() Client {
+func NewClient(cacheTTL time.Duration) Client {
 	return Client{
 		httpClient: http.Client{
 			Transport: &net.OpenLibraryTransport{
@@ -25,6 +28,7 @@ func NewClient() Client {
 				Transport: http.DefaultTransport,
 			},
 		},
+		cache: bookcache.NewCacheStorage(cacheTTL),
 	}
 }
 
