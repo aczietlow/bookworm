@@ -3,10 +3,10 @@ package openlibraryapi
 import (
 	"net/http"
 
-	"github.com/aczietlow/addToBookshelf/net"
+	"github.com/aczietlow/bookworm/net"
 )
 
-const baseURL = "https://openlibrary.org/api"
+const baseURL = "https://openlibrary.org"
 
 type Client struct {
 	httpClient http.Client

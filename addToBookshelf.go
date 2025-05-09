@@ -6,9 +6,8 @@ import (
 	"log"
 	"net/http"
 
-	"github.com/aczietlow/addToBookshelf/api"
-	"github.com/aczietlow/addToBookshelf/net"
-	"github.com/aczietlow/addToBookshelf/pkg/openlibraryapi"
+	"github.com/aczietlow/bookworm/api"
+	"github.com/aczietlow/bookworm/net"
 )
 
 type book struct {
@@ -18,20 +17,6 @@ type book struct {
 	ISBN     []string
 	cover    string
 	// categories []string
-}
-
-func main() {
-	// book := "The minority report"
-	bookISBN := "9780756419189"
-	bookData := getBookByID(bookISBN)
-	prettyPrint(bookData)
-
-	openLibClient := openlibraryapi.NewClient()
-	conf := &config{
-		apiClient: openLibClient,
-	}
-	startCli(conf)
-
 }
 
 func getBookByID(id string) api.BookResponse {

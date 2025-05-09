@@ -6,8 +6,10 @@ import (
 	"os"
 	"strings"
 
-	"github.com/aczietlow/addToBookshelf/pkg/openlibraryapi"
+	"github.com/aczietlow/bookworm/pkg/openlibraryapi"
 )
+
+var registry map[string]cliCommand
 
 type config struct {
 	apiClient openlibraryapi.Client
@@ -19,15 +21,12 @@ type cliCommand struct {
 	callback    func(*config, ...string) error
 }
 
-var registry map[string]cliCommand
-
 func startCli(conf *config) {
 	scanner := bufio.NewScanner(os.Stdin)
 	registry := registerCommands()
 	fmt.Print("Bookworm > ")
 	for scanner.Scan() {
 		userInput := cleanInput(scanner.Text())
-
 		command := userInput[0]
 		if c, ok := registry[command]; ok {
 			err := c.callback(conf, userInput[1:]...)
@@ -39,7 +38,6 @@ func startCli(conf *config) {
 		}
 		fmt.Print("Bookworm > ")
 	}
-
 }
 
 func registerCommands() map[string]cliCommand {
@@ -48,6 +46,16 @@ func registerCommands() map[string]cliCommand {
 			name:        "exit",
 			description: "Exit library api",
 			callback:    commandExit,
+		},
+		"help": {
+			name:        "help",
+			description: "List all available commands",
+			callback:    commandHelp,
+		},
+		"search": {
+			name:        "search",
+			description: "Search open library via a solr query. search <string>",
+			callback:    commandSearch,
 		},
 	}
 }
