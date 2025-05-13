@@ -16,7 +16,7 @@ func commandSearch(conf *config, args ...string) error {
 	}
 
 	for _, book := range results {
-		fmt.Printf("%s by %s author\n", book.Title, book.AuthorName[0])
+		fmt.Printf("%s | %s by %s\n", book.Key, book.Title, book.AuthorName[0])
 	}
 
 	return nil

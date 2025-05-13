@@ -57,6 +57,11 @@ func registerCommands() map[string]cliCommand {
 			description: "Search open library via a solr query. search <string>",
 			callback:    commandSearch,
 		},
+		"inspect": {
+			name:        "inspect",
+			description: "Inspect a book by providing its id",
+			callback:    commandInspect,
+		},
 	}
 }
 

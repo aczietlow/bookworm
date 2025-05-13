@@ -4,7 +4,6 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/aczietlow/bookworm/net"
 	"github.com/aczietlow/bookworm/pkg/bookcache"
 )
 
@@ -23,8 +22,8 @@ type Transport struct {
 func NewClient(cacheTTL time.Duration) Client {
 	return Client{
 		httpClient: http.Client{
-			Transport: &net.OpenLibraryTransport{
-				UserAgent: "Add To Bookshelf/0.1 (aczietlow@gmail.com)",
+			Transport: &Transport{
+				UserAgent: "Bookworm/0.1 (aczietlow@gmail.com)",
 				Transport: http.DefaultTransport,
 			},
 		},
