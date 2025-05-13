@@ -4,8 +4,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"log"
 	"net/http"
+	"strings"
 )
 
 type book struct {
@@ -18,41 +18,102 @@ type book struct {
 }
 
 func (c *Client) GetBookById(id string) (book, error) {
-	url := baseURL + "/works/" + id + ".json"
+	id = strings.ToUpper(id)
 
-	resp, err := c.httpClient.Get(url)
+	lr, err := getBookDetails(id, c.httpClient)
 	if err != nil {
 		return book{}, err
-	}
-
-	if resp.StatusCode != http.StatusOK {
-		return book{}, fmt.Errorf("received a %d reponse from the api\n", resp.StatusCode)
-	}
-
-	body, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return book{}, err
-	}
-
-	work := work{}
-	if err := json.Unmarshal(body, &work); err != nil {
-		return book{}, nil
 	}
 
 	b := book{
-		Title: work.Title,
-		// Subtitle: source.Data.SubTitle,
-		// Cover:    source.Data.Cover.Large,
+		Title: lr.Work.Title,
+	}
+
+	for _, edition := range lr.Editions.Entries {
+		if edition.Subtitle != "" {
+			b.Subtitle = edition.Subtitle
+			break
+		}
 	}
 
 	return b, nil
 
 }
 
-func prettyPrint(data any) {
-	encodedData, err := json.MarshalIndent(data, "", "  ")
+func getBookDetails(id string, httpClient http.Client) (openLibraryBook, error) {
+	libraryRecord := openLibraryBook{}
+	w, err := getWorkById(id, httpClient)
 	if err != nil {
-		log.Fatal("failed to pretty print map")
+		return openLibraryBook{}, err
 	}
-	fmt.Println(string(encodedData))
+	libraryRecord.Work = w
+
+	e, err := getWorkEditions(id, httpClient)
+	if err != nil {
+		return openLibraryBook{}, err
+	}
+	libraryRecord.Editions = e
+
+	// fmt.Printf("t:\n%v\n", libraryRecord)
+
+	return libraryRecord, nil
+}
+
+func getWorkById(id string, httpClient http.Client) (work, error) {
+	url := baseURL + "/works/" + id + ".json"
+
+	resp, err := httpClient.Get(url)
+	if err != nil {
+		return work{}, err
+	}
+
+	if resp.StatusCode != http.StatusOK {
+		return work{}, fmt.Errorf("received a %d reponse from the api\n", resp.StatusCode)
+	}
+
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return work{}, err
+	}
+
+	w := work{}
+	if err := json.Unmarshal(body, &w); err != nil {
+		return work{}, nil
+	}
+	return w, nil
+}
+
+func getWorkEditions(id string, httpClient http.Client) (editions, error) {
+	url := baseURL + "/works/" + id + "/editions.json"
+	resp, err := httpClient.Get(url)
+	if err != nil {
+		return editions{}, err
+	}
+
+	if resp.StatusCode != http.StatusOK {
+		return editions{}, fmt.Errorf("received a %d reponse from the api\n", resp.StatusCode)
+	}
+
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return editions{}, err
+	}
+
+	e := editions{}
+	if err := json.Unmarshal(body, &e); err != nil {
+		return editions{}, err
+	}
+
+	e2 := editions{
+		Size:    0,
+		Entries: []edition{},
+	}
+	for _, edition := range e.Entries {
+		if edition.Languages[0].Key == "/languages/eng" {
+			e2.Entries = append(e2.Entries, edition)
+			e2.Size++
+		}
+	}
+
+	return e2, nil
 }
