@@ -13,6 +13,7 @@ func commandInspect(conf *config, args ...string) error {
 	fmt.Printf("Title: %s\n", book.Title)
 	fmt.Printf("Subtitle: %s\n", book.Subtitle)
 	fmt.Printf("Cover: %s\n", book.Cover)
+	fmt.Printf("ISBN: %s\n", book.ISBN)
 
 	return nil
 }

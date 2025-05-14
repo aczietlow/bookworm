@@ -12,9 +12,11 @@ type book struct {
 	Title    string
 	Subtitle string
 	Author   []string
-	ISBN     []string
+	Summary  string
+	ISBN     string
+	Genre    []string
 	Cover    string
-	// categories []string
+	Source   string
 }
 
 func (c *Client) GetBookById(id string) (book, error) {
@@ -25,19 +27,32 @@ func (c *Client) GetBookById(id string) (book, error) {
 		return book{}, err
 	}
 
+	b := aggregateLibraryRecord(lr)
+
+	return b, nil
+
+}
+
+func aggregateLibraryRecord(libraryRecord openLibraryBook) book {
 	b := book{
-		Title: lr.Work.Title,
+		Title: libraryRecord.Work.Title,
 	}
 
-	for _, edition := range lr.Editions.Entries {
+	for _, edition := range libraryRecord.Editions.Entries {
 		if edition.Subtitle != "" {
 			b.Subtitle = edition.Subtitle
 			break
 		}
 	}
 
-	return b, nil
+	for _, edition := range libraryRecord.Editions.Entries {
+		if edition.Isbn13[0] != "" {
+			b.ISBN = edition.Isbn13[0]
+			break
+		}
+	}
 
+	return b
 }
 
 func getBookDetails(id string, httpClient http.Client) (openLibraryBook, error) {
@@ -53,8 +68,6 @@ func getBookDetails(id string, httpClient http.Client) (openLibraryBook, error) 
 		return openLibraryBook{}, err
 	}
 	libraryRecord.Editions = e
-
-	// fmt.Printf("t:\n%v\n", libraryRecord)
 
 	return libraryRecord, nil
 }
@@ -104,6 +117,7 @@ func getWorkEditions(id string, httpClient http.Client) (editions, error) {
 		return editions{}, err
 	}
 
+	// Only return english editions
 	e2 := editions{
 		Size:    0,
 		Entries: []edition{},
