@@ -5,18 +5,19 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"strconv"
 	"strings"
 )
 
 type book struct {
-	Title    string
-	Subtitle string
-	Author   []string
-	Summary  string
-	ISBN     string
-	Genre    []string
-	Cover    string
-	Source   string
+	Title       string
+	Subtitle    string
+	Authors     []string
+	Description string
+	ISBN        string
+	Genre       []string
+	Cover       string
+	Source      string
 }
 
 func (c *Client) GetBookById(id string) (book, error) {
@@ -38,16 +39,47 @@ func aggregateLibraryRecord(libraryRecord openLibraryBook) book {
 		Title: libraryRecord.Work.Title,
 	}
 
-	for _, edition := range libraryRecord.Editions.Entries {
-		if edition.Subtitle != "" {
-			b.Subtitle = edition.Subtitle
-			break
-		}
+	// Set description if available
+	if libraryRecord.Work.Description != "" {
+		b.Description = libraryRecord.Work.Description
 	}
 
+	if libraryRecord.Work.Key != "" {
+		b.Source = baseURL + libraryRecord.Work.Key
+	}
+
+	mappedFields := []string{}
+
+	// Loop through each edition looking for the data to populate a whole book object.
 	for _, edition := range libraryRecord.Editions.Entries {
-		if edition.Isbn13[0] != "" {
+		if b.Subtitle == "" && edition.Subtitle != "" {
+			b.Subtitle = edition.Subtitle
+			mappedFields = append(mappedFields, "Subtitle")
+		}
+
+		if b.ISBN == "" && edition.Isbn13[0] != "" {
+			// Assume we'll only ever want a single ISBN number
 			b.ISBN = edition.Isbn13[0]
+			mappedFields = append(mappedFields, "ISBN")
+		}
+
+		if len(b.Genre) <= 0 && len(edition.Subjects) > 0 {
+			b.Genre = edition.Subjects
+			mappedFields = append(mappedFields, "Genre")
+		}
+
+		if b.Cover == "" && len(edition.Covers) > 0 {
+			b.Cover = "https://covers.openlibrary.org/b/id/" + strconv.Itoa(edition.Covers[0]) + ".jpg"
+			mappedFields = append(mappedFields, "Cover")
+		}
+
+		if len(b.Authors) <= 0 && len(edition.Authors) > 0 {
+			b.Authors = edition.Authors
+			mappedFields = append(mappedFields, "Authors")
+		}
+
+		// Stop iterating throgh editions if we have all the data required.
+		if len(mappedFields) == 5 {
 			break
 		}
 	}
@@ -118,16 +150,50 @@ func getWorkEditions(id string, httpClient http.Client) (editions, error) {
 	}
 
 	// Only return english editions
+	// TODO: Reslice existing slice to reduce memory footprint
 	e2 := editions{
 		Size:    0,
 		Entries: []edition{},
 	}
+
 	for _, edition := range e.Entries {
 		if edition.Languages[0].Key == "/languages/eng" {
+			for _, author := range edition.AuthorKeys {
+				a, err := getAuthorByKey(author.Key, httpClient)
+				if err != nil {
+					return editions{}, err
+				}
+				edition.Authors = append(edition.Authors, a.Name)
+
+			}
 			e2.Entries = append(e2.Entries, edition)
 			e2.Size++
 		}
 	}
 
 	return e2, nil
+}
+
+func getAuthorByKey(key string, httpClient http.Client) (author, error) {
+	url := baseURL + "/" + key + ".json"
+	resp, err := httpClient.Get(url)
+	if err != nil {
+		return author{}, err
+	}
+
+	if resp.StatusCode != http.StatusOK {
+		return author{}, fmt.Errorf("received a %d reponse from the api\n", resp.StatusCode)
+	}
+
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return author{}, err
+	}
+
+	a := author{}
+	if err := json.Unmarshal(body, &a); err != nil {
+		return author{}, nil
+	}
+
+	return a, nil
 }

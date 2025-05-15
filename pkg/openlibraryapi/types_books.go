@@ -19,7 +19,7 @@ type bookData struct {
 }
 
 type author struct {
-	Name string `json:"name"`
+	Name string `json:"personal_name"`
 }
 
 type identifer struct {
@@ -42,18 +42,11 @@ type work struct {
 	Type struct {
 		Key string `json:"key"`
 	} `json:"type"`
-	Title    string   `json:"title"`
-	Subjects []string `json:"subjects"`
-	// Authors  []struct {
-	// 	Type struct {
-	// 		Key string `json:"key"`
-	// 	} `json:"type"`
-	// 	Author struct {
-	// 		Key string `json:"key"`
-	// 	} `json:"author"`
-	// } `json:"authors"`
-	Key    string `json:"key"`
-	Covers []int  `json:"covers"`
+	Title       string   `json:"title"`
+	Subjects    []string `json:"subjects"`
+	Description string   `json:"description"`
+	Key         string   `json:"key"`
+	Covers      []int    `json:"covers"`
 }
 
 type editions struct {
@@ -65,6 +58,10 @@ type edition struct {
 	Type struct {
 		Key string `json:"key"`
 	} `json:"type"`
+	AuthorKeys []struct {
+		Key string `json:"key"`
+	} `json:"authors"`
+	Authors   []string
 	Languages []struct {
 		Key string `json:"key"`
 	} `json:"languages"`
