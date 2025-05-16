@@ -23,13 +23,28 @@ type book struct {
 func (c *Client) GetBookById(id string) (book, error) {
 	id = strings.ToUpper(id)
 
-	lr, err := getBookDetails(id, c.httpClient)
+	// Attempt to fetch from cache first
+	if cacheRecord, exists := c.cache.Get(id); exists {
+		lr := openLibraryBook{}
+		if err := json.Unmarshal(cacheRecord, &lr); err != nil {
+			return book{}, nil
+		}
+		b := aggregateLibraryRecord(lr)
+		return b, nil
+	}
+
+	lr, err := getBookDetails(id, &c.httpClient)
 	if err != nil {
 		return book{}, err
 	}
 
-	b := aggregateLibraryRecord(lr)
+	cacheRecord, err := json.Marshal(lr)
+	if err != nil {
+		return book{}, err
+	}
+	c.cache.Add(id, cacheRecord)
 
+	b := aggregateLibraryRecord(lr)
 	return b, nil
 
 }
@@ -40,8 +55,8 @@ func aggregateLibraryRecord(libraryRecord openLibraryBook) book {
 	}
 
 	// Set description if available
-	if libraryRecord.Work.Description != "" {
-		b.Description = libraryRecord.Work.Description
+	if libraryRecord.Work.Description.Value != "" {
+		b.Description = libraryRecord.Work.Description.Value
 	}
 
 	if libraryRecord.Work.Key != "" {
@@ -87,15 +102,16 @@ func aggregateLibraryRecord(libraryRecord openLibraryBook) book {
 	return b
 }
 
-func getBookDetails(id string, httpClient http.Client) (openLibraryBook, error) {
+func getBookDetails(openLibraryId string, httpClient *http.Client) (openLibraryBook, error) {
 	libraryRecord := openLibraryBook{}
-	w, err := getWorkById(id, httpClient)
+
+	w, err := getWorkById(openLibraryId, httpClient)
 	if err != nil {
 		return openLibraryBook{}, err
 	}
 	libraryRecord.Work = w
 
-	e, err := getWorkEditions(id, httpClient)
+	e, err := getWorkEditions(openLibraryId, httpClient)
 	if err != nil {
 		return openLibraryBook{}, err
 	}
@@ -104,7 +120,7 @@ func getBookDetails(id string, httpClient http.Client) (openLibraryBook, error) 
 	return libraryRecord, nil
 }
 
-func getWorkById(id string, httpClient http.Client) (work, error) {
+func getWorkById(id string, httpClient *http.Client) (work, error) {
 	url := baseURL + "/works/" + id + ".json"
 
 	resp, err := httpClient.Get(url)
@@ -128,7 +144,7 @@ func getWorkById(id string, httpClient http.Client) (work, error) {
 	return w, nil
 }
 
-func getWorkEditions(id string, httpClient http.Client) (editions, error) {
+func getWorkEditions(id string, httpClient *http.Client) (editions, error) {
 	url := baseURL + "/works/" + id + "/editions.json"
 	resp, err := httpClient.Get(url)
 	if err != nil {
@@ -174,7 +190,7 @@ func getWorkEditions(id string, httpClient http.Client) (editions, error) {
 	return e2, nil
 }
 
-func getAuthorByKey(key string, httpClient http.Client) (author, error) {
+func getAuthorByKey(key string, httpClient *http.Client) (author, error) {
 	url := baseURL + "/" + key + ".json"
 	resp, err := httpClient.Get(url)
 	if err != nil {

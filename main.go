@@ -12,7 +12,7 @@ func main() {
 	// bookData := getBookByID(bookISBN)
 	// prettyPrint(bookData)
 
-	openLibClient := openlibraryapi.NewClient(time.Minute * 5)
+	openLibClient := openlibraryapi.NewClient(time.Second*10, time.Minute*5)
 	conf := &config{
 		apiClient: openLibClient,
 	}
