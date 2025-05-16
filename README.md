@@ -1,6 +1,6 @@
-# Add to Bookshef
+# Bookworm
 
-Building out an API to fetch the data about books that get suggested to me to read.
+A TUI app to quickly search for books and add them to my "to read" list
 
 Ultimate goal is send a title of a book to the api, and have it add it to my website. But that will require setting up microformats.
 
@@ -11,5 +11,23 @@ Start with the open library api.
 start with the latest recommendations
 - How to Measure Anything: Finding the Value of "Intangibles" in Business (Douglas  Hubbard)
 - Supercommunicators: How to Unlock the Secret Language of Connection (Charlest Dugg)
+
+## Rules of Side Questing 
+
+As with most side quests, this project is more about the journey more than the destination.
+
+Want to learn: 
+- more go
+- more of go std lib
+- architecture design patterns
+- consequences of actually having an application more than 2000 lines of code
+- experiment with TUIs
+- continue to improve speed with neovim
+
+Offlimits:
+- frameworks and libraries that solve problems in this domain out of the box
+  - cobra commands
+  - gin
+  - bubbletea
 
 

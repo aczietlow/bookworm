@@ -8,5 +8,6 @@
 
 ## problems for later 
 - [ ] build a factory that allows for easier registering of command 
+- [ ] add architecture.md doc
 
 
