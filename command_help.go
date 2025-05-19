@@ -1,6 +1,10 @@
 package main
 
-import "fmt"
+import (
+	"fmt"
+
+	"github.com/rivo/tview"
+)
 
 func commandHelp(conf *config, args ...string) error {
 	fmt.Print("Bookworm usage:\n\n")
@@ -9,4 +13,8 @@ func commandHelp(conf *config, args ...string) error {
 	}
 	fmt.Println()
 	return nil
+}
+
+func viewHelp(conf *config) tview.Primitive {
+	return tview.NewBox().SetTitle("help").SetBorder(true)
 }

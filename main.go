@@ -37,78 +37,85 @@ const (
 
 func main() {
 	openLibClient := openlibraryapi.NewClient(time.Second*10, time.Minute*5)
+	tuiApp := tui{
+		app:   tview.NewApplication(),
+		pages: tview.NewPages(),
+	}
 
 	conf := &config{
 		apiClient: openLibClient,
-		tui: tui{
-			app:   tview.NewApplication(),
-			pages: tview.NewPages(),
-		},
+		tui:       tuiApp,
+		registry:  registerCommands(),
 	}
 
 	// TODO: uncomment once were ready to merge these things together
 	// startCli(conf)
 
 	app := conf.tui.app
-
-	// stubbing out registry
-	registry := makeCommands()
-
-	search := tview.NewInputField().
-		SetLabel("Title").
-		SetFieldWidth(20)
-	search.SetTitle("Search").SetBorder(true)
-
-	// List commands
+	pages := conf.tui.pages
+	registry := conf.registry
 	commands := tview.NewList().ShowSecondaryText(false)
+
 	for _, c := range registry {
-		// search = c.view
-		commands.AddItem(c.name, "", 0, func() {
-			app.SetFocus(search)
-		})
+		commands.SetTitle("Functions").SetBorder(true)
+		commands.AddItem(c.name, "", 0, nil)
 	}
-	commands.AddItem("Quit", "", 'q', func() {
-		app.Stop()
-	})
-	commands.SetTitle("Functions").SetBorder(true)
 
-	results := tview.NewTextView().
-		SetChangedFunc(func() {
-			app.Draw()
+	for _, c := range registry {
+		results := conf.tui.newResultsView()
+		view := c.view(conf)
+
+		commands.SetSelectedFunc(func(i int, main string, secondary string, shortcut rune) {
+			pages.SwitchToPage(c.name)
+			app.SetFocus(view)
 		})
-	results.SetTitle("Results").SetBorder(true)
 
-	search.SetDoneFunc(func(key tcell.Key) {
-		if key == tcell.KeyEnter {
-			searchText := search.GetText()
-			// results.Clear()
-			results.SetText(fmt.Sprintf("\n\n%s", searchText))
-		} else if key == tcell.KeyEsc {
-			app.SetFocus(commands)
+		// TODO: ugh, command listItems need to be able to switch pages, and set focus to flexbox item child tview.Primitive
+		// indices := commands.FindItems(c.name, "", false, true)
+		// if len(indices) <= 1 {
+		// 	i := indices[0]
+		// 	commands.SetSelectedFunc(func(index i, c.name, "", 0) {
+		//
+		// 	})
+		// } else {
+		// 	err := fmt.Errorf("multiple commands registered with identical name")
+		// 	panic(err)
+		// }
+
+		switch v := view.(type) {
+		case *tview.InputField:
+			v.SetDoneFunc(func(key tcell.Key) {
+				if key == tcell.KeyEnter {
+					searchText := v.GetText()
+					// TODO: utilize the callback from the command definition
+					results.SetText(fmt.Sprintf("\n\n%s", searchText))
+				} else if key == tcell.KeyEsc {
+					app.SetFocus(commands)
+				}
+			})
+
 		}
-	})
 
-	flexLayout := tview.NewFlex().
-		AddItem(commands, 0, 1, true).
-		AddItem(search, 0, 1, false).
-		AddItem(results, 0, 3, false)
+		flexLayout := tview.NewFlex().
+			AddItem(commands, 0, 1, true).
+			AddItem(view, 0, 1, false).
+			AddItem(results, 0, 3, false)
 
-	pages := tview.NewPages().AddPage(tuiStartPage, flexLayout, true, true)
+		pages.AddPage(c.name, flexLayout, true, true)
+	}
 
-	conf.tui.pages = pages
 	app.SetRoot(pages, true)
-
 	if err := app.Run(); err != nil {
 		panic(err)
 	}
 }
 
-// TODO: Attempting to build view for all registry commands
-func makeCommands() map[string]command {
-	return map[string]command{
-		"Search": {
-			name:        "Search",
-			description: "Search Function",
-		},
-	}
+func (tui *tui) newResultsView() *tview.TextView {
+	results := tview.NewTextView().
+		SetChangedFunc(func() {
+			tui.app.Draw()
+		})
+	results.SetTitle("Results").SetBorder(true)
+
+	return results
 }
