@@ -1,3 +1,4 @@
+## Underlying API
 - [x] Add command to search for books by title
 - [x] Add cache
 - [x] Completely refactor out legacy code 
@@ -5,6 +6,10 @@
 - [ ] openlibrary URL arguments need to all be upper case. 
 - [ ] Update http calls for OL objects to check the cache first
   - decide if you want to cache api calls, or aggregated data objects
+
+## TUI
+- [ ] bootstrap 2 table layout
+- [ ] Display the out of commands in right talbe pane 
 
 ## problems for later 
 - [ ] build a factory that allows for easier registering of command 

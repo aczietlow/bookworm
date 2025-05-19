@@ -13,6 +13,7 @@ var registry map[string]cliCommand
 
 type config struct {
 	apiClient openlibraryapi.Client
+	tui       tui
 }
 
 type cliCommand struct {
