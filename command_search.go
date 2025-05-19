@@ -3,6 +3,8 @@ package main
 import (
 	"fmt"
 	"strings"
+
+	"github.com/rivo/tview"
 )
 
 func commandSearch(conf *config, args ...string) error {
@@ -30,4 +32,13 @@ func solrQueryString(q []string) string {
 	}
 
 	return strings.ReplaceAll(str, " ", "+")
+}
+
+func viewSearch(conf *config) tview.Primitive {
+	search := tview.NewInputField().
+		SetLabel("Title").
+		SetFieldWidth(20)
+	search.SetTitle("Search").SetBorder(true)
+
+	return search
 }

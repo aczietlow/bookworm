@@ -1,6 +1,10 @@
 package main
 
-import "fmt"
+import (
+	"fmt"
+
+	"github.com/rivo/tview"
+)
 
 func commandInspect(conf *config, args ...string) error {
 	id := args[0]
@@ -21,4 +25,13 @@ func commandInspect(conf *config, args ...string) error {
 	fmt.Printf("ISBN: %s\n", book.ISBN)
 
 	return nil
+}
+
+func viewInspect(conf *config) tview.Primitive {
+	search := tview.NewInputField().
+		SetLabel("Open Library ID").
+		SetFieldWidth(20)
+	search.SetTitle("Inspect").SetBorder(true)
+
+	return search
 }

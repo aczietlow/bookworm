@@ -1,12 +1,14 @@
 package main
 
 import (
-	"fmt"
-	"os"
+	"github.com/rivo/tview"
 )
 
 func commandExit(conf *config, args ...string) error {
-	fmt.Print("Shutting down...Goodbye.\n")
-	os.Exit(0)
+	conf.tui.app.Stop()
 	return nil
+}
+
+func viewExit(conf *config) tview.Primitive {
+	return tview.NewBox().SetTitle("help").SetBorder(true)
 }
