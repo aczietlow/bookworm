@@ -10,5 +10,5 @@ func commandExit(conf *config, args ...string) error {
 }
 
 func viewExit(conf *config) tview.Primitive {
-	return tview.NewBox().SetTitle("help").SetBorder(true)
+	return tview.NewBox().SetTitle("Exit").SetBorder(true)
 }
