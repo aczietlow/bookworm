@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"sort"
 	"time"
 
 	"github.com/aczietlow/bookworm/pkg/openlibraryapi"
@@ -16,14 +17,6 @@ import (
 // 	"Quit",
 // 	"Inspect",
 // }
-
-var regv2 map[string]command
-
-// TOOD: extend existing function registry with this
-type command struct {
-	name        string
-	description string
-}
 
 type tui struct {
 	app   *tview.Application
@@ -54,33 +47,27 @@ func main() {
 	app := conf.tui.app
 	pages := conf.tui.pages
 	registry := conf.registry
-	commands := tview.NewList().ShowSecondaryText(false)
 
-	for _, c := range registry {
-		commands.SetTitle("Functions").SetBorder(true)
-		commands.AddItem(c.name, "", 0, nil)
+	// TODO: This might be the dumbest way of tracking this state.
+	var views []*tview.Primitive
+	var registryOrder []string
+	for k := range registry {
+		registryOrder = append(registryOrder, k)
 	}
 
-	for _, c := range registry {
+	// TODO: Come up with a better sort algo.
+	sort.Sort(sort.Reverse(sort.StringSlice(registryOrder)))
+	// slices.Sort(registryOrder)
+
+	commands := tview.NewList().ShowSecondaryText(false)
+	commands.SetTitle("Functions").SetBorder(true)
+
+	for i, k := range registryOrder {
+		c := registry[k]
+		commands.AddItem(c.name, "", 0, nil)
 		results := conf.tui.newResultsView()
 		view := c.view(conf)
-
-		commands.SetSelectedFunc(func(i int, main string, secondary string, shortcut rune) {
-			pages.SwitchToPage(c.name)
-			app.SetFocus(view)
-		})
-
-		// TODO: ugh, command listItems need to be able to switch pages, and set focus to flexbox item child tview.Primitive
-		// indices := commands.FindItems(c.name, "", false, true)
-		// if len(indices) <= 1 {
-		// 	i := indices[0]
-		// 	commands.SetSelectedFunc(func(index i, c.name, "", 0) {
-		//
-		// 	})
-		// } else {
-		// 	err := fmt.Errorf("multiple commands registered with identical name")
-		// 	panic(err)
-		// }
+		views = append(views, &view)
 
 		switch v := view.(type) {
 		case *tview.InputField:
@@ -88,7 +75,7 @@ func main() {
 				if key == tcell.KeyEnter {
 					searchText := v.GetText()
 					// TODO: utilize the callback from the command definition
-					results.SetText(fmt.Sprintf("\n\n%s", searchText))
+					results.SetText(fmt.Sprintf("%s", searchText))
 				} else if key == tcell.KeyEsc {
 					app.SetFocus(commands)
 				}
@@ -101,10 +88,18 @@ func main() {
 			AddItem(view, 0, 1, false).
 			AddItem(results, 0, 3, false)
 
-		pages.AddPage(c.name, flexLayout, true, true)
+		pages.AddPage(c.name, flexLayout, true, i == 0)
 	}
 
-	app.SetRoot(pages, true)
+	commands.SetSelectedFunc(func(i int, main string, secondary string, shortcut rune) {
+		name := registryOrder[i]
+		pages.SwitchToPage(name)
+
+		view := views[i]
+		app.SetFocus(*view)
+	})
+
+	app.SetRoot(pages, true).SetFocus(pages)
 	if err := app.Run(); err != nil {
 		panic(err)
 	}
