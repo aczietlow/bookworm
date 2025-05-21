@@ -7,31 +7,28 @@ import (
 	"github.com/rivo/tview"
 )
 
-func commandSearch(conf *config, args ...string) error {
+func commandSearch(conf *config, args ...string) (string, error) {
 	if len(args) < 1 {
-		return fmt.Errorf("Please provide a a string to query")
+		return "", fmt.Errorf("Please provide a a string to query")
 	}
 
-	results, err := conf.apiClient.SearchQuery(solrQueryString(args))
+	searchText := solrQueryString(args[0])
+	results, err := conf.apiClient.SearchQuery(searchText)
 	if err != nil {
-		return err
+		return "", err
 	}
 
+	output := ""
 	for _, book := range results {
-		fmt.Printf("%s | %s by %s\n", book.Key, book.Title, book.AuthorName[0])
+		output += fmt.Sprintf("%s | %s by %s\n", book.Key, book.Title, book.AuthorName[0])
+
 	}
 
-	return nil
+	return output, nil
 }
 
-func solrQueryString(q []string) string {
-	str := q[0]
-
-	for _, s := range q[1:] {
-		str += " " + s
-	}
-
-	return strings.ReplaceAll(str, " ", "+")
+func solrQueryString(q string) string {
+	return strings.ReplaceAll(q, " ", "+")
 }
 
 func viewSearch(conf *config) tview.Primitive {

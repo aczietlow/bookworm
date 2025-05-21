@@ -21,7 +21,7 @@ type config struct {
 type cliCommand struct {
 	name        string
 	description string
-	callback    func(*config, ...string) error
+	callback    func(*config, ...string) (string, error)
 	view        func(*config) tview.Primitive
 }
 
@@ -33,7 +33,7 @@ func startCli(conf *config) {
 		userInput := cleanInput(scanner.Text())
 		command := userInput[0]
 		if c, ok := registry[command]; ok {
-			err := c.callback(conf, userInput[1:]...)
+			_, err := c.callback(conf, userInput[1:]...)
 			if err != nil {
 				fmt.Printf("Error: %s\n", err)
 			}

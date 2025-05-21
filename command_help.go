@@ -6,13 +6,13 @@ import (
 	"github.com/rivo/tview"
 )
 
-func commandHelp(conf *config, args ...string) error {
-	fmt.Print("Bookworm usage:\n\n")
+func commandHelp(conf *config, args ...string) (string, error) {
+	output := fmt.Sprint("Bookworm usage:\n\n")
 	for _, c := range registry {
-		fmt.Printf("%s: %s\n", c.name, c.description)
+		output += fmt.Sprintf("%s: %s\n", c.name, c.description)
 	}
 	fmt.Println()
-	return nil
+	return output, nil
 }
 
 func viewHelp(conf *config) tview.Primitive {
