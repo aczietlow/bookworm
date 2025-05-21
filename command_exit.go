@@ -4,9 +4,9 @@ import (
 	"github.com/rivo/tview"
 )
 
-func commandExit(conf *config, args ...string) error {
+func commandExit(conf *config, args ...string) (string, error) {
 	conf.tui.app.Stop()
-	return nil
+	return "", nil
 }
 
 func viewExit(conf *config) tview.Primitive {

@@ -8,7 +8,6 @@ import (
 	"github.com/aczietlow/bookworm/pkg/openlibraryapi"
 	"github.com/gdamore/tcell/v2"
 	"github.com/rivo/tview"
-	// "github.com/aczietlow/bookworm/pkg/openlibraryapi"
 )
 
 // var commands = []string{
@@ -75,7 +74,11 @@ func main() {
 				if key == tcell.KeyEnter {
 					searchText := v.GetText()
 					// TODO: utilize the callback from the command definition
-					results.SetText(fmt.Sprintf("%s", searchText))
+					result, err := c.callback(conf, searchText)
+					if err != nil {
+						panic(err)
+					}
+					results.SetText(fmt.Sprintf("%s", result))
 				} else if key == tcell.KeyEsc {
 					app.SetFocus(commands)
 				}
