@@ -11,7 +11,7 @@ func commandHelp(conf *config, args ...string) (string, error) {
 	for _, c := range registry {
 		output += fmt.Sprintf("%s: %s\n", c.name, c.description)
 	}
-	fmt.Println()
+
 	return output, nil
 }
 

@@ -13,11 +13,13 @@
 ## TUI
 - [x] bootstrap 2 table layout
 - [x] Display the out of commands in right talbe pane 
-- [ ] Refactor PoC tui logic from main() into appropraite locations
+- [x] Refactor PoC tui logic from main() into appropraite locations
 - [ ] Add f(x) to pull data from result pane to another f(x)
   - e.g. Using the search function, search for a book by title, select the desired book, then "insepct" that book to fetch additional information about said book
+- [ ] Update how the result pane gets drawn
+  - Need to allow commands to return more †han just strings e.g. hierarchical json data to get displayed as treeview
 
 ## problems for later 
 - [ ] build a factory that allows for easier registering of command 
-- [ ] add architecture.md doc
+- [x] add architecture.md doc
 - [ ] Add a spinner when fetching data from the api 

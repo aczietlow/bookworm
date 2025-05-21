@@ -2,6 +2,8 @@
 
 A TUI app to quickly search for books and add them to my "to read" list
 
+![Screenshot of Bookworm searching for book information](docs/bookwormCLI.png)
+
 Ultimate goal is send a title of a book to the api, and have it add it to my website. But that will require setting up microformats.
 
 ## Examples

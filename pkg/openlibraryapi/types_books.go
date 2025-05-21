@@ -1,8 +1,8 @@
 package openlibraryapi
 
-type author struct {
-	Name string `json:"personal_name"`
-}
+// type author struct {
+// 	Name string `json:"personal_name"`
+// }
 
 type openLibraryBook struct {
 	Work     work

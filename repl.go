@@ -47,7 +47,14 @@ func startTuiApp(conf *config) {
 	sort.Sort(sort.Reverse(sort.StringSlice(registryOrder)))
 
 	commands := tview.NewList().ShowSecondaryText(false)
-	commands.SetTitle("Functions").SetBorder(true)
+	commands.SetTitle("Functions").SetBorder(true).SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
+		if event.Rune() == 'j' {
+			return tcell.NewEventKey(tcell.KeyDown, rune(0), tcell.ModNone)
+		} else if event.Rune() == 'k' {
+			return tcell.NewEventKey(tcell.KeyUp, rune(0), tcell.ModNone)
+		}
+		return event
+	})
 
 	results := tview.NewTextView().
 		SetChangedFunc(func() {
@@ -132,6 +139,12 @@ func registerCommands() map[string]cliCommand {
 			description: "Inspect a book by providing its id",
 			callback:    commandInspect,
 			view:        viewInspect,
+		},
+		"debug": {
+			name:        "debug",
+			description: "Useful for debuggin while building out app",
+			callback:    commandDebug,
+			view:        viewDebug,
 		},
 	}
 }
