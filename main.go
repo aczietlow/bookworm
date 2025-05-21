@@ -23,10 +23,6 @@ type tui struct {
 	focus tview.Primitive
 }
 
-const (
-	tuiStartPage = "Search"
-)
-
 func main() {
 	openLibClient := openlibraryapi.NewClient(time.Second*10, time.Minute*5)
 	tuiApp := tui{
@@ -73,7 +69,6 @@ func main() {
 			v.SetDoneFunc(func(key tcell.Key) {
 				if key == tcell.KeyEnter {
 					searchText := v.GetText()
-					// TODO: utilize the callback from the command definition
 					result, err := c.callback(conf, searchText)
 					if err != nil {
 						panic(err)
