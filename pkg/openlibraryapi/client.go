@@ -38,3 +38,11 @@ func (t *Transport) RoundTrip(r *http.Request) (*http.Response, error) {
 	}
 	return t.Transport.RoundTrip(r)
 }
+
+func (c *Client) Get() (resp *http.Response, err error) {
+	authorOID := "FOO"
+	url := baseURL + "/authors/" + authorOID + ".json"
+
+	return c.httpClient.Get(url)
+
+}

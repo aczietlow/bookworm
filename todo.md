@@ -8,7 +8,10 @@
   - decide if you want to cache api calls, or aggregated data objects
 - [ ] Add command to fetch raw json from api to demo tree viewer
 - [ ] Add command to add books to reading list
-
+- [ ] api errors
+  - [ ] validate the correct ID is sent
+  - [x] the search term "the fault" causes a panic
+    - the api results can return a works object with no author_name
 
 ## TUI
 - [x] bootstrap 2 table layout

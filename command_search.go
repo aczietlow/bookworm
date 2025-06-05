@@ -20,8 +20,11 @@ func commandSearch(conf *config, args ...string) (string, error) {
 
 	output := ""
 	for _, book := range results {
-		output += fmt.Sprintf("%s | %s by %s\n", book.Key, book.Title, book.AuthorName[0])
-
+		authorName := "N/A"
+		if len(book.AuthorName) > 0 {
+			authorName = book.AuthorName[0]
+		}
+		output += fmt.Sprintf("%s | %s by %s\n", book.Key, book.Title, authorName)
 	}
 
 	return output, nil
