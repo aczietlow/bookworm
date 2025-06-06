@@ -72,7 +72,7 @@ func aggregateLibraryRecord(libraryRecord openLibraryBook) book {
 			mappedFields = append(mappedFields, "Subtitle")
 		}
 
-		if b.ISBN == "" && edition.Isbn13[0] != "" {
+		if b.ISBN == "" && len(edition.Isbn13) > 0 && edition.Isbn13[0] != "" {
 			// Assume we'll only ever want a single ISBN number
 			b.ISBN = edition.Isbn13[0]
 			mappedFields = append(mappedFields, "ISBN")
@@ -173,7 +173,7 @@ func getWorkEditions(id string, httpClient *http.Client) (editions, error) {
 	}
 
 	for _, edition := range e.Entries {
-		if edition.Languages[0].Key == "/languages/eng" {
+		if len(edition.Languages) > 0 && edition.Languages[0].Key == "/languages/eng" {
 			for _, author := range edition.AuthorKeys {
 				a, err := getAuthorByKey(author.Key, httpClient)
 				if err != nil {
