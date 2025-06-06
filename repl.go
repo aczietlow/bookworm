@@ -22,6 +22,7 @@ type cliCommand struct {
 	description string
 	callback    func(*config, ...string) (string, error)
 	view        func(*config) tview.Primitive
+	result      func(*config) tview.Primitive
 }
 
 func startCli(conf *config) {
@@ -56,17 +57,20 @@ func startTuiApp(conf *config) {
 		return event
 	})
 
-	results := tview.NewTextView().
-		SetChangedFunc(func() {
-			app.Draw()
-		})
-	results.SetTitle("Results").SetBorder(true)
-
 	for i, k := range registryOrder {
 		c := registry[k]
 		commands.AddItem(c.name, "", 0, nil)
 		view := c.view(conf)
 		views = append(views, &view)
+		var results tview.Primitive
+
+		// Look for custom result views
+		if c.result != nil {
+			r := c.result(conf)
+			results = r
+		} else {
+			results = conf.tui.NewResultTextView()
+		}
 
 		switch v := view.(type) {
 		case *tview.InputField:
@@ -77,7 +81,12 @@ func startTuiApp(conf *config) {
 					if err != nil {
 						panic(err)
 					}
-					results.SetText(fmt.Sprintf("%s", result))
+
+					if r, ok := results.(*tview.TextView); ok {
+						r.SetText(fmt.Sprintf("%s", result))
+						results = r
+					}
+
 				} else if key == tcell.KeyEsc {
 					app.SetFocus(commands)
 				}
@@ -89,10 +98,12 @@ func startTuiApp(conf *config) {
 				if err != nil {
 					panic(err)
 				}
-				results.SetText(fmt.Sprintf("%s", result))
+				if r, ok := results.(*tview.TextView); ok {
+					r.SetText(fmt.Sprintf("%s", result))
+					results = r
+				}
 				app.SetFocus(commands)
 			})
-
 		}
 
 		flexLayout := tview.NewFlex().
@@ -112,6 +123,15 @@ func startTuiApp(conf *config) {
 	})
 
 	app.SetRoot(pages, true).SetFocus(pages)
+}
+
+func (tui *tui) NewResultTextView() *tview.TextView {
+	results := tview.NewTextView().
+		SetChangedFunc(func() {
+			tui.app.Draw()
+		})
+	results.SetTitle("Results").SetBorder(true)
+	return results
 }
 
 func registerCommands() map[string]cliCommand {
@@ -145,6 +165,7 @@ func registerCommands() map[string]cliCommand {
 			description: "Useful for debuggin while building out app",
 			callback:    commandDebug,
 			view:        viewDebug,
+			result:      resultDebug,
 		},
 	}
 }

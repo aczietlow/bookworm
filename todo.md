@@ -6,7 +6,7 @@
 - [ ] openlibrary URL arguments need to all be upper case. 
 - [ ] Update http calls for OL objects to check the cache first
   - decide if you want to cache api calls, or aggregated data objects
-- [ ] Add command to fetch raw json from api to demo tree viewer
+- [ ] Add command to fetch raw json from api to demo tree viewer <--
 - [ ] Add command to add books to reading list
 - [x] api errors
   - [x] validate the correct ID is sent
