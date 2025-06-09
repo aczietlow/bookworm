@@ -4,11 +4,15 @@ import (
 	"github.com/rivo/tview"
 )
 
-func commandExit(conf *config, args ...string) (string, error) {
+func commandExit(conf *config, args ...string) ([]byte, error) {
 	conf.tui.app.Stop()
-	return "", nil
+	return nil, nil
 }
 
 func viewExit(conf *config) tview.Primitive {
-	return tview.NewBox().SetTitle("Exit").SetBorder(true)
+	return nil
+}
+
+func resultExit(conf *config, data []byte) tview.Primitive {
+	return nil
 }

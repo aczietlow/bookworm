@@ -6,12 +6,12 @@ import (
 	"github.com/rivo/tview"
 )
 
-func commandInspect(conf *config, args ...string) (string, error) {
+func commandInspect(conf *config, args ...string) ([]byte, error) {
 	id := args[0]
 
 	book, err := conf.apiClient.GetBookById(id)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 
 	output := ""
@@ -25,7 +25,7 @@ func commandInspect(conf *config, args ...string) (string, error) {
 	output += fmt.Sprintf("Cover: %s\n", book.Cover)
 	output += fmt.Sprintf("ISBN: %s\n", book.ISBN)
 
-	return output, nil
+	return []byte(output), nil
 }
 
 func viewInspect(conf *config) tview.Primitive {
@@ -35,4 +35,14 @@ func viewInspect(conf *config) tview.Primitive {
 	search.SetTitle("Inspect").SetBorder(true)
 
 	return search
+}
+
+func resultInspect(conf *config, data []byte) tview.Primitive {
+	results := tview.NewTextView().
+		SetChangedFunc(func() {
+			conf.tui.app.Draw()
+		})
+	results.SetTitle("Search Results").SetBorder(true)
+	results.SetText(string(data))
+	return results
 }

@@ -20,9 +20,15 @@ type config struct {
 type cliCommand struct {
 	name        string
 	description string
-	callback    func(*config, ...string) (string, error)
+	callback    func(*config, ...string) ([]byte, error)
 	view        func(*config) tview.Primitive
-	result      func(*config) tview.Primitive
+	result      func(*config, []byte) tview.Primitive
+}
+
+// TODO: Do something with this
+type commandUI struct {
+	View    tview.Primitive
+	Results tview.Primitive
 }
 
 func startCli(conf *config) {
@@ -62,30 +68,29 @@ func startTuiApp(conf *config) {
 		commands.AddItem(c.name, "", 0, nil)
 		view := c.view(conf)
 		views = append(views, &view)
-		var results tview.Primitive
+		results := c.result(conf, nil)
 
-		// Look for custom result views
-		if c.result != nil {
-			r := c.result(conf)
-			results = r
-		} else {
-			results = conf.tui.NewResultTextView()
-		}
+		flexLayout := tview.NewFlex().
+			AddItem(commands, 0, 1, true).
+			AddItem(view, 0, 1, false).
+			AddItem(results, 0, 3, false)
 
+		// Add interaction callbacks
 		switch v := view.(type) {
 		case *tview.InputField:
 			v.SetDoneFunc(func(key tcell.Key) {
 				if key == tcell.KeyEnter {
 					searchText := v.GetText()
-					result, err := c.callback(conf, searchText)
+					data, err := c.callback(conf, searchText)
 					if err != nil {
 						panic(err)
 					}
 
-					if r, ok := results.(*tview.TextView); ok {
-						r.SetText(fmt.Sprintf("%s", result))
-						results = r
-					}
+					// TODO: Attach behavior to jump from results panes to view panes
+					updatedResults := c.result(conf, data)
+					flexLayout.RemoveItem(results)
+					flexLayout.AddItem(updatedResults, 0, 3, false)
+					app.SetFocus(updatedResults)
 
 				} else if key == tcell.KeyEsc {
 					app.SetFocus(commands)
@@ -113,15 +118,8 @@ func startTuiApp(conf *config) {
 					})
 					app.SetFocus(results)
 				}
-
-				// app.SetFocus(commands)
 			})
 		}
-
-		flexLayout := tview.NewFlex().
-			AddItem(commands, 0, 1, true).
-			AddItem(view, 0, 1, false).
-			AddItem(results, 0, 3, false)
 
 		pages.AddPage(c.name, flexLayout, true, i == 0)
 	}
@@ -153,24 +151,28 @@ func registerCommands() map[string]cliCommand {
 			description: "Exit library api",
 			callback:    commandExit,
 			view:        viewExit,
+			result:      resultExit,
 		},
 		"help": {
 			name:        "help",
 			description: "List all available commands",
 			callback:    commandHelp,
 			view:        viewHelp,
+			result:      resultHelp,
 		},
 		"search": {
 			name:        "search",
 			description: "Search open library via a solr query. search <string>",
 			callback:    commandSearch,
 			view:        viewSearch,
+			result:      resultSearch,
 		},
 		"inspect": {
 			name:        "inspect",
 			description: "Inspect a book by providing its id",
 			callback:    commandInspect,
 			view:        viewInspect,
+			result:      resultInspect,
 		},
 		"debug": {
 			name:        "debug",

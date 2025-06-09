@@ -9,17 +9,17 @@ import (
 	"github.com/rivo/tview"
 )
 
-func commandDebug(conf *config, args ...string) (string, error) {
+func commandDebug(conf *config, args ...string) ([]byte, error) {
 
 	authorData, err := conf.apiClient.DebugQuery()
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 
 	output := "Debugging\n"
 	output += fmt.Sprintf("Author: %v\n", authorData)
 
-	return output, nil
+	return []byte(output), nil
 }
 
 func viewDebug(conf *config) tview.Primitive {
@@ -36,7 +36,7 @@ func resultTextDebug(conf *config) tview.Primitive {
 	return results
 }
 
-func resultDebug(conf *config) tview.Primitive {
+func resultDebug(conf *config, data []byte) tview.Primitive {
 	// app := conf.tui.app
 
 	rootDir := "."
