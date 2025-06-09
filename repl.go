@@ -91,6 +91,7 @@ func startTuiApp(conf *config) {
 					app.SetFocus(commands)
 				}
 			})
+
 		// This is the default primatitive, if there is no interactivity just call the command callback immediately.
 		case *tview.Box:
 			v.SetFocusFunc(func() {
@@ -98,11 +99,22 @@ func startTuiApp(conf *config) {
 				if err != nil {
 					panic(err)
 				}
-				if r, ok := results.(*tview.TextView); ok {
-					r.SetText(fmt.Sprintf("%s", result))
-					results = r
+
+				switch resultType := results.(type) {
+				case *tview.TextView:
+					resultType.SetText(fmt.Sprintf("%s", result))
+					results = resultType
+					app.SetFocus(commands)
+				case *tview.TreeView:
+					resultType.SetDoneFunc(func(key tcell.Key) {
+						if key == tcell.KeyEsc {
+							app.SetFocus(commands)
+						}
+					})
+					app.SetFocus(results)
 				}
-				app.SetFocus(commands)
+
+				// app.SetFocus(commands)
 			})
 		}
 
