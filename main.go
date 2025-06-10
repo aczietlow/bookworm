@@ -8,9 +8,10 @@ import (
 )
 
 type tui struct {
-	app   *tview.Application
-	pages *tview.Pages
-	focus tview.Primitive
+	app           *tview.Application
+	pages         *tview.Pages
+	focus         *tview.Primitive
+	registryOrder []string
 }
 
 func main() {

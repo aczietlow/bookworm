@@ -10,7 +10,7 @@ func commandExit(conf *config, args ...string) ([]byte, error) {
 }
 
 func viewExit(conf *config) tview.Primitive {
-	return nil
+	return tview.NewBox().SetTitle("Exit").SetBorder(true)
 }
 
 func resultExit(conf *config, data []byte) tview.Primitive {
