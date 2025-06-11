@@ -44,12 +44,17 @@ func viewSearch(conf *config) tview.Primitive {
 }
 
 func resultSearch(conf *config, data []byte) tview.Primitive {
-	results := tview.NewTextView().
-		SetChangedFunc(func() {
-			conf.tui.app.Draw()
-		})
-	results.SetTitle("Search Results").SetBorder(true)
-	results.SetText(string(data))
 
-	return results
+	list := tview.NewList()
+	results := strings.Split(string(data), "\n")
+	for _, r := range results {
+		text := strings.Split(r, "|")
+		if len(text) > 1 {
+			list.AddItem(text[0], text[1], 0, nil)
+		}
+	}
+
+	list.SetTitle("Search Results").SetBorder(true).SetInputCapture(setTviewInputMethod)
+
+	return list
 }

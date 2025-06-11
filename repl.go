@@ -9,13 +9,13 @@ import (
 	"github.com/rivo/tview"
 )
 
-var registry map[string]cliCommand
-
 type config struct {
 	apiClient openlibraryapi.Client
 	tui       tui
 	registry  map[string]*cliCommand
 }
+
+var registry map[string]cliCommand
 
 type cliCommand struct {
 	name          string
@@ -70,7 +70,6 @@ func startTuiApp(conf *config) {
 						panic(err)
 					}
 
-					// TODO: Attach behavior to jump from results panes to view panes
 					flexLayout.RemoveItem(c.resultView)
 					c.resultView = nil
 					c.resultView = c.getResultView(conf, data)
@@ -82,6 +81,16 @@ func startTuiApp(conf *config) {
 								app.SetFocus(commands)
 							}
 							app.SetFocus(c.view)
+						})
+					}
+					if rv, ok := c.resultView.(*tview.List); ok {
+						rv.SetDoneFunc(func() {
+							if key == tcell.KeyEsc {
+								app.SetFocus(c.view)
+							}
+						}).SetSelectedFunc(func(i int, main string, secondary string, shortcut rune) {
+							conf.tui.currentBook = main
+							app.SetFocus(commands)
 						})
 					}
 					// end hack
@@ -118,22 +127,6 @@ func startTuiApp(conf *config) {
 		}
 
 		pages.AddPage(c.name, flexLayout, true, i == 0)
-	}
-
-	// TODO: This isn't working....
-	// I think the problem is when we write the data to the result primitive, we're actually creating a new instance of the result
-	// Set Navigation Controls for Results
-	for _, k := range registryOrder {
-		c := registry[k]
-		switch resultView := c.resultView.(type) {
-		case *tview.TextView:
-			resultView.SetDoneFunc(func(key tcell.Key) {
-				if key == tcell.KeyEsc {
-					app.SetFocus(commands)
-				}
-				app.SetFocus(c.view)
-			})
-		}
 	}
 
 	commands.SetSelectedFunc(func(i int, main string, secondary string, shortcut rune) {

@@ -34,6 +34,10 @@ func viewInspect(conf *config) tview.Primitive {
 		SetFieldWidth(20)
 	search.SetTitle("Inspect").SetBorder(true)
 
+	if conf.tui.currentBook != "" {
+		search.SetText(conf.tui.currentBook)
+	}
+
 	return search
 }
 

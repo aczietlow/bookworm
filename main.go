@@ -12,6 +12,7 @@ type tui struct {
 	pages         *tview.Pages
 	focus         *tview.Primitive
 	registryOrder []string
+	currentBook   string
 }
 
 func main() {
