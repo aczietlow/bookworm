@@ -8,7 +8,7 @@ import (
 
 func commandHelp(conf *config, args ...string) ([]byte, error) {
 	output := fmt.Sprint("Bookworm usage:\n\n")
-	for _, c := range registry {
+	for _, c := range conf.registry {
 		output += fmt.Sprintf("%s: %s\n", c.name, c.description)
 	}
 

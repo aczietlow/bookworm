@@ -11,56 +11,100 @@ import (
 
 type config struct {
 	apiClient openlibraryapi.Client
-	tui       tui
+	tui       *tui
 	registry  map[string]*cliCommand
 }
-
-var registry map[string]cliCommand
 
 type cliCommand struct {
 	name          string
 	description   string
 	callback      func(*config, ...string) ([]byte, error)
 	getView       func(*config) tview.Primitive
-	view          tview.Primitive
 	getResultView func(*config, []byte) tview.Primitive
-	resultView    tview.Primitive
 }
 
-func startCli(conf *config) {
-	startTuiApp(conf)
-	if err := conf.tui.app.Run(); err != nil {
+type commandsView struct {
+	resultView tview.Primitive
+	view       tview.Primitive
+}
+
+type tuiState struct {
+	currentBook string
+}
+
+type tui struct {
+	appState      *config
+	app           *tview.Application
+	pages         *tview.Pages
+	commands      *tview.List
+	registryOrder []string
+	commandsView  map[string]*commandsView
+	tuiState      *tuiState
+}
+
+func NewTui(conf *config) *tui {
+	tui := &tui{
+		app:          tview.NewApplication(),
+		pages:        tview.NewPages(),
+		appState:     conf,
+		tuiState:     &tuiState{},
+		commandsView: make(map[string]*commandsView),
+	}
+	tui.initTui()
+
+	// TODO: refactor to remove this tight coupling.
+	// Actually use DI if that's the route we want to go
+	conf.tui = tui
+
+	tui.startTuiApp()
+
+	return tui
+}
+
+func (t *tui) Run() {
+	if err := t.app.Run(); err != nil {
 		panic(err)
 	}
 }
 
-func startTuiApp(conf *config) {
-	app := conf.tui.app
-	registry := conf.registry
-	pages := conf.tui.pages
-	registryOrder := conf.tui.registryOrder
+func (t *tui) initTui() {
+	t.buildCommandsList()
+}
 
-	for k := range registry {
-		registryOrder = append(registryOrder, k)
+func (t *tui) buildCommandsList() {
+	for c := range t.appState.registry {
+		t.registryOrder = append(t.registryOrder, c)
 	}
-	// TODO: Come up with a better sort algo.
-	sort.Sort(sort.Reverse(sort.StringSlice(registryOrder)))
+	sort.Sort(sort.Reverse(sort.StringSlice(t.registryOrder)))
 
-	commands := tview.NewList().ShowSecondaryText(false)
-	commands.SetTitle("Functions").SetBorder(true).SetInputCapture(setTviewInputMethod)
-	for i, k := range registryOrder {
-		c := registry[k]
-		commands.AddItem(c.name, "", 0, nil)
-		c.view = c.getView(conf)
-		c.resultView = c.getResultView(conf, nil)
+	t.commands = tview.NewList().ShowSecondaryText(false).SetSelectedFunc(func(i int, main string, secondary string, shortcut rune) {
+		name := t.registryOrder[i]
+		t.pages.SwitchToPage(name)
+		t.app.SetFocus(t.commandsView[name].view)
+	})
+
+	t.commands.SetTitle("Functions").SetBorder(true).SetInputCapture(setTviewInputMethod)
+}
+
+func (t *tui) startTuiApp() {
+	conf := t.appState
+
+	for i, k := range t.registryOrder {
+		c := t.appState.registry[k]
+		t.commands.AddItem(c.name, "", 0, nil)
+		t.commandsView[c.name] = &commandsView{
+			view:       c.getView(conf),
+			resultView: c.getResultView(conf, nil),
+		}
+		cv := t.commandsView[c.name]
 
 		flexLayout := tview.NewFlex().
-			AddItem(commands, 0, 1, true).
-			AddItem(c.view, 0, 1, false).
-			AddItem(c.resultView, 0, 3, false)
+			AddItem(t.commands, 0, 1, true).
+			AddItem(cv.view, 0, 1, false).
+			AddItem(cv.resultView, 0, 3, false)
 
 		// Add interaction callbacks
-		switch v := c.view.(type) {
+		switch v := cv.view.(type) {
 		case *tview.InputField:
 			v.SetDoneFunc(func(key tcell.Key) {
 				if key == tcell.KeyEnter {
@@ -70,35 +114,35 @@ func startTuiApp(conf *config) {
 						panic(err)
 					}
 
-					flexLayout.RemoveItem(c.resultView)
-					c.resultView = nil
-					c.resultView = c.getResultView(conf, data)
+					flexLayout.RemoveItem(cv.resultView)
+					cv.resultView = nil
+					cv.resultView = c.getResultView(conf, data)
 
 					// TODO: attaching the results navigation here feels like a bit of a hack
-					if rv, ok := c.resultView.(*tview.TextView); ok {
+					if rv, ok := cv.resultView.(*tview.TextView); ok {
 						rv.SetDoneFunc(func(key tcell.Key) {
 							if key == tcell.KeyEsc {
-								app.SetFocus(commands)
+								t.app.SetFocus(t.commands)
 							}
-							app.SetFocus(c.view)
+							t.app.SetFocus(cv.view)
 						})
 					}
-					if rv, ok := c.resultView.(*tview.List); ok {
+					if rv, ok := cv.resultView.(*tview.List); ok {
 						rv.SetDoneFunc(func() {
 							if key == tcell.KeyEsc {
-								app.SetFocus(c.view)
+								t.app.SetFocus(cv.view)
 							}
 						}).SetSelectedFunc(func(i int, main string, secondary string, shortcut rune) {
-							conf.tui.currentBook = main
-							app.SetFocus(commands)
+							t.tuiState.currentBook = main
+							t.app.SetFocus(t.commands)
 						})
 					}
 					// end hack
 
-					flexLayout.AddItem(c.resultView, 0, 3, false)
-					app.SetFocus(c.resultView)
+					flexLayout.AddItem(cv.resultView, 0, 3, false)
+					t.app.SetFocus(cv.resultView)
 				} else if key == tcell.KeyEsc {
-					app.SetFocus(commands)
+					t.app.SetFocus(t.commands)
 				}
 			})
 
@@ -110,41 +154,26 @@ func startTuiApp(conf *config) {
 					panic(err)
 				}
 
-				switch resultType := c.resultView.(type) {
+				switch resultType := cv.resultView.(type) {
 				case *tview.TextView:
 					resultType.SetText(fmt.Sprintf("%s", data))
-					c.resultView = resultType
-					app.SetFocus(commands)
+					cv.resultView = resultType
+					t.app.SetFocus(t.commands)
 				case *tview.TreeView:
 					resultType.SetDoneFunc(func(key tcell.Key) {
 						if key == tcell.KeyEsc {
-							app.SetFocus(commands)
+							t.app.SetFocus(t.commands)
 						}
 					})
-					app.SetFocus(c.resultView)
+					t.app.SetFocus(cv.resultView)
 				}
 			})
 		}
 
-		pages.AddPage(c.name, flexLayout, true, i == 0)
+		t.pages.AddPage(c.name, flexLayout, true, i == 0)
 	}
 
-	commands.SetSelectedFunc(func(i int, main string, secondary string, shortcut rune) {
-		name := registryOrder[i]
-		pages.SwitchToPage(name)
-		app.SetFocus(registry[name].view)
-	})
-
-	app.SetRoot(pages, true).SetFocus(pages)
-}
-
-func (tui *tui) NewResultTextView() *tview.TextView {
-	results := tview.NewTextView().
-		SetChangedFunc(func() {
-			tui.app.Draw()
-		})
-	results.SetTitle("Results").SetBorder(true)
-	return results
+	t.app.SetRoot(t.pages, true).SetFocus(t.pages)
 }
 
 func setTviewInputMethod(event *tcell.EventKey) *tcell.EventKey {

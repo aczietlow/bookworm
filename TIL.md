@@ -3,6 +3,7 @@
 ### vim motions + neovim setup
 
 `K` - show code definition in telescope
+`<c-W>d` - show inline tooltip for error
 
 `<c-shift-U>` - move half page up
 `<c-shift-D>` - move half page up
