@@ -19,6 +19,11 @@
 - [x] bootstrap 2 table layout
 - [x] Display the out of commands in right talbe pane 
 - [x] Refactor PoC tui logic from main() into appropraite locations
+- [ ] unbreak input capture that allows user to esc from result pane back to view pane
+- [ ] refactor command registry
+  - need structs defined for each commandView since each will have its own udpate() and updateResult()
+  - confirm results will actually be different
+  - or if a generic we could just extend the tview.Primitives themselves to include update() functions
 - [ ] Add f(x) to pull data from result pane to another f(x)
   - e.g. Using the search function, search for a book by title, select the desired book, then "insepct" that book to fetch additional information about said book
 - [ ] Update how the result pane gets drawn

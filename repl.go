@@ -23,9 +23,10 @@ type cliCommand struct {
 	getResultView func(*config, []byte) tview.Primitive
 }
 
-type commandsView struct {
+type commandView struct {
 	resultView tview.Primitive
 	view       tview.Primitive
+	updateView func([]byte)
 }
 
 type tuiState struct {
@@ -38,7 +39,7 @@ type tui struct {
 	pages         *tview.Pages
 	commands      *tview.List
 	registryOrder []string
-	commandsView  map[string]*commandsView
+	commandsView  map[string]*commandView
 	tuiState      *tuiState
 }
 
@@ -48,7 +49,7 @@ func NewTui(conf *config) *tui {
 		pages:        tview.NewPages(),
 		appState:     conf,
 		tuiState:     &tuiState{},
-		commandsView: make(map[string]*commandsView),
+		commandsView: make(map[string]*commandView),
 	}
 	tui.initTui()
 
@@ -92,7 +93,7 @@ func (t *tui) startTuiApp() {
 	for i, k := range t.registryOrder {
 		c := t.appState.registry[k]
 		t.commands.AddItem(c.name, "", 0, nil)
-		t.commandsView[c.name] = &commandsView{
+		t.commandsView[c.name] = &commandView{
 			view:       c.getView(conf),
 			resultView: c.getResultView(conf, nil),
 		}
@@ -134,6 +135,9 @@ func (t *tui) startTuiApp() {
 							}
 						}).SetSelectedFunc(func(i int, main string, secondary string, shortcut rune) {
 							t.tuiState.currentBook = main
+							if iv, ok := t.commandsView["inspect"].view.(*tview.InputField); ok {
+								iv.SetText(main)
+							}
 							t.app.SetFocus(t.commands)
 						})
 					}

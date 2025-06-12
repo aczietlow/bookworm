@@ -36,6 +36,8 @@ func viewInspect(conf *config) tview.Primitive {
 
 	if conf.tui.tuiState.currentBook != "" {
 		search.SetText(conf.tui.tuiState.currentBook)
+	} else {
+		search.SetText("foo")
 	}
 
 	return search
