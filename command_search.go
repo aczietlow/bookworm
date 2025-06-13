@@ -34,7 +34,7 @@ func solrQueryString(q string) string {
 	return strings.ReplaceAll(q, " ", "+")
 }
 
-func viewSearch(conf *config) tview.Primitive {
+func searchView(conf *config) tview.Primitive {
 	search := tview.NewInputField().
 		SetLabel("Title").
 		SetFieldWidth(20)
@@ -43,18 +43,36 @@ func viewSearch(conf *config) tview.Primitive {
 	return search
 }
 
-func resultSearch(conf *config, data []byte) tview.Primitive {
-
-	list := tview.NewList()
-	results := strings.Split(string(data), "\n")
-	for _, r := range results {
-		text := strings.Split(r, "|")
-		if len(text) > 1 {
-			list.AddItem(text[0], text[1], 0, nil)
-		}
+func updateSearchView(t tview.Primitive, data []byte) {
+	if tv, ok := t.(*tview.InputField); ok {
+		tv.SetText(string(data))
 	}
+}
 
+func searchResultView(conf *config) tview.Primitive {
+	list := tview.NewList()
 	list.SetTitle("Search Results").SetBorder(true).SetInputCapture(setTviewInputMethod)
 
 	return list
+}
+
+func updateSearchResultView(t tview.Primitive, data []byte) {
+	if tv, ok := t.(*tview.List); ok {
+		results := strings.Split(string(data), "\n")
+		for _, r := range results {
+			text := strings.Split(r, "|")
+			if len(text) > 1 {
+				tv.AddItem(text[0], text[1], 0, nil)
+			}
+		}
+	}
+}
+
+func newSearchCommandView(conf *config) *commandView {
+	return &commandView{
+		view:             searchView(conf),
+		updateView:       updateSearchView,
+		resultView:       searchResultView(conf),
+		updateResultView: updateSearchResultView,
+	}
 }

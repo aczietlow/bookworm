@@ -22,7 +22,7 @@ func commandDebug(conf *config, args ...string) ([]byte, error) {
 	return []byte(output), nil
 }
 
-func viewDebug(conf *config) tview.Primitive {
+func debugView(conf *config) tview.Primitive {
 	return tview.NewBox().SetTitle("Debug").SetBorder(true)
 }
 
@@ -36,7 +36,7 @@ func resultTextDebug(conf *config) tview.Primitive {
 	return results
 }
 
-func resultDebug(conf *config, data []byte) tview.Primitive {
+func debugResultView(conf *config) tview.Primitive {
 	// app := conf.tui.app
 
 	rootDir := "."
@@ -85,4 +85,13 @@ func resultDebug(conf *config, data []byte) tview.Primitive {
 	})
 
 	return tree
+}
+
+func newDebugCommandView(conf *config) *commandView {
+	return &commandView{
+		view:             debugView(conf),
+		updateView:       nil,
+		resultView:       debugResultView(conf),
+		updateResultView: nil,
+	}
 }

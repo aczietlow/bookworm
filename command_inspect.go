@@ -28,27 +28,42 @@ func commandInspect(conf *config, args ...string) ([]byte, error) {
 	return []byte(output), nil
 }
 
-func viewInspect(conf *config) tview.Primitive {
+func inspectView(conf *config) tview.Primitive {
 	search := tview.NewInputField().
 		SetLabel("Open Library ID").
 		SetFieldWidth(20)
 	search.SetTitle("Inspect").SetBorder(true)
 
-	if conf.tui.tuiState.currentBook != "" {
-		search.SetText(conf.tui.tuiState.currentBook)
-	} else {
-		search.SetText("foo")
-	}
-
 	return search
 }
 
-func resultInspect(conf *config, data []byte) tview.Primitive {
-	results := tview.NewTextView().
-		SetChangedFunc(func() {
-			conf.tui.app.Draw()
-		})
+func updateInspectView(t tview.Primitive, data []byte) {
+	if tv, ok := t.(*tview.InputField); ok {
+		tv.SetText(string(data))
+	}
+}
+
+func inspectResultView(conf *config) tview.Primitive {
+	results := tview.NewTextView()
+	// I'm pretty sure this isn't really needed
+	// results.SetChangedFunc(func() {
+	// 	conf.tui.app.Draw()
+	// })
 	results.SetTitle("Search Results").SetBorder(true)
-	results.SetText(string(data))
 	return results
+}
+
+func updateInspectResultView(t tview.Primitive, data []byte) {
+	if tv, ok := t.(*tview.TextView); ok {
+		tv.SetText(string(data))
+	}
+}
+
+func newInspectCommandView(conf *config) *commandView {
+	return &commandView{
+		view:             inspectView(conf),
+		updateView:       updateInspectView,
+		resultView:       inspectResultView(conf),
+		updateResultView: updateInspectResultView,
+	}
 }

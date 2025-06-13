@@ -16,17 +16,10 @@ type config struct {
 }
 
 type cliCommand struct {
-	name          string
-	description   string
-	callback      func(*config, ...string) ([]byte, error)
-	getView       func(*config) tview.Primitive
-	getResultView func(*config, []byte) tview.Primitive
-}
-
-type commandView struct {
-	resultView tview.Primitive
-	view       tview.Primitive
-	updateView func([]byte)
+	name           string
+	description    string
+	callback       func(*config, ...string) ([]byte, error)
+	getCommandView func(*config) *commandView
 }
 
 type tuiState struct {
@@ -70,6 +63,7 @@ func (t *tui) Run() {
 
 func (t *tui) initTui() {
 	t.buildCommandsList()
+	t.buildCommandsViews()
 }
 
 func (t *tui) buildCommandsList() {
@@ -87,16 +81,20 @@ func (t *tui) buildCommandsList() {
 	t.commands.SetTitle("Functions").SetBorder(true).SetInputCapture(setTviewInputMethod)
 }
 
+func (t *tui) buildCommandsViews() {
+	for _, k := range t.registryOrder {
+		c := t.appState.registry[k]
+		t.commands.AddItem(c.name, "", 0, nil)
+		t.commandsView[c.name] = c.getCommandView(t.appState)
+	}
+
+}
+
 func (t *tui) startTuiApp() {
 	conf := t.appState
 
 	for i, k := range t.registryOrder {
 		c := t.appState.registry[k]
-		t.commands.AddItem(c.name, "", 0, nil)
-		t.commandsView[c.name] = &commandView{
-			view:       c.getView(conf),
-			resultView: c.getResultView(conf, nil),
-		}
 		cv := t.commandsView[c.name]
 
 		flexLayout := tview.NewFlex().
@@ -114,10 +112,7 @@ func (t *tui) startTuiApp() {
 					if err != nil {
 						panic(err)
 					}
-
-					flexLayout.RemoveItem(cv.resultView)
-					cv.resultView = nil
-					cv.resultView = c.getResultView(conf, data)
+					cv.UpdateResultView(data)
 
 					// TODO: attaching the results navigation here feels like a bit of a hack
 					if rv, ok := cv.resultView.(*tview.TextView); ok {
@@ -192,39 +187,34 @@ func setTviewInputMethod(event *tcell.EventKey) *tcell.EventKey {
 func registerCommands() map[string]*cliCommand {
 	return map[string]*cliCommand{
 		"exit": {
-			name:          "exit",
-			description:   "Exit library api",
-			callback:      commandExit,
-			getView:       viewExit,
-			getResultView: resultExit,
+			name:           "exit",
+			description:    "Exit library api",
+			callback:       commandExit,
+			getCommandView: newExitCommandView,
 		},
 		"help": {
-			name:          "help",
-			description:   "List all available commands",
-			callback:      commandHelp,
-			getView:       viewHelp,
-			getResultView: resultHelp,
+			name:           "help",
+			description:    "List all available commands",
+			getCommandView: newHelpCommandView,
+			callback:       commandHelp,
 		},
 		"search": {
-			name:          "search",
-			description:   "Search open library via a solr query. search <string>",
-			callback:      commandSearch,
-			getView:       viewSearch,
-			getResultView: resultSearch,
+			name:           "search",
+			description:    "Search open library via a solr query. search <string>",
+			callback:       commandSearch,
+			getCommandView: newSearchCommandView,
 		},
 		"inspect": {
-			name:          "inspect",
-			description:   "Inspect a book by providing its id",
-			callback:      commandInspect,
-			getView:       viewInspect,
-			getResultView: resultInspect,
+			name:           "inspect",
+			description:    "Inspect a book by providing its id",
+			callback:       commandInspect,
+			getCommandView: newInspectCommandView,
 		},
 		"debug": {
-			name:          "debug",
-			description:   "Useful for debuggin while building out app",
-			callback:      commandDebug,
-			getView:       viewDebug,
-			getResultView: resultDebug,
+			name:           "debug",
+			description:    "Useful for debuggin while building out app",
+			callback:       commandDebug,
+			getCommandView: newDebugCommandView,
 		},
 	}
 }

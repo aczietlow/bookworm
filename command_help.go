@@ -15,16 +15,29 @@ func commandHelp(conf *config, args ...string) ([]byte, error) {
 	return []byte(output), nil
 }
 
-func viewHelp(conf *config) tview.Primitive {
+func helpView(conf *config) tview.Primitive {
 	return tview.NewBox().SetTitle("help").SetBorder(true)
 }
 
-func resultHelp(conf *config, data []byte) tview.Primitive {
+func helpResultView(conf *config) tview.Primitive {
 	results := tview.NewTextView().
 		SetChangedFunc(func() {
 			conf.tui.app.Draw()
 		})
-	results.SetTitle("Search Results").SetBorder(true)
-	results.SetText(string(data))
+	results.SetTitle("Bookworm Help").SetBorder(true)
 	return results
+}
+func updateHelpResultView(t tview.Primitive, data []byte) {
+	if tv, ok := t.(*tview.TextView); ok {
+		tv.SetText(string(data))
+	}
+}
+
+func newHelpCommandView(conf *config) *commandView {
+	return &commandView{
+		view:             helpView(conf),
+		updateView:       nil,
+		resultView:       helpResultView(conf),
+		updateResultView: updateHelpResultView,
+	}
 }

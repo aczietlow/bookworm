@@ -9,10 +9,19 @@ func commandExit(conf *config, args ...string) ([]byte, error) {
 	return nil, nil
 }
 
-func viewExit(conf *config) tview.Primitive {
+func exitView(conf *config) tview.Primitive {
 	return tview.NewBox().SetTitle("Exit").SetBorder(true)
 }
 
-func resultExit(conf *config, data []byte) tview.Primitive {
+func exitResult(conf *config) tview.Primitive {
 	return nil
+}
+
+func newExitCommandView(conf *config) *commandView {
+	return &commandView{
+		view:             exitView(conf),
+		updateView:       nil,
+		resultView:       nil,
+		updateResultView: nil,
+	}
 }
