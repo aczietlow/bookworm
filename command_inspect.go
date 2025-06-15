@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 
+	"github.com/gdamore/tcell/v2"
 	"github.com/rivo/tview"
 )
 
@@ -45,10 +46,7 @@ func updateInspectView(t tview.Primitive, data []byte) {
 
 func inspectResultView(conf *config) tview.Primitive {
 	results := tview.NewTextView()
-	// I'm pretty sure this isn't really needed
-	// results.SetChangedFunc(func() {
-	// 	conf.tui.app.Draw()
-	// })
+
 	results.SetTitle("Search Results").SetBorder(true)
 	return results
 }
@@ -60,10 +58,31 @@ func updateInspectResultView(t tview.Primitive, data []byte) {
 }
 
 func newInspectCommandView(conf *config) *commandView {
-	return &commandView{
+	cv := &commandView{
 		view:             inspectView(conf),
 		updateView:       updateInspectView,
 		resultView:       inspectResultView(conf),
 		updateResultView: updateInspectResultView,
 	}
+
+	return cv
+}
+
+func attachInspectBehaviors(cv *commandView, conf *config) {
+	t := conf.tui
+	if results, ok := cv.resultView.(*tview.TextView); ok {
+		results.SetDoneFunc(func(key tcell.Key) {
+			if key == tcell.KeyEsc {
+				t.app.SetFocus(t.commands)
+			} else if key == tcell.KeyEnter {
+				t.app.SetFocus(cv.resultView)
+			}
+			t.app.SetFocus(cv.view)
+		})
+		// TODO:I'm pretty sure this isn't really needed
+		// results.SetChangedFunc(func() {
+		// 	conf.tui.app.Draw()
+		// })
+	}
+
 }

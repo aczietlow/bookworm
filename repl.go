@@ -50,6 +50,8 @@ func NewTui(conf *config) *tui {
 	// Actually use DI if that's the route we want to go
 	conf.tui = tui
 
+	tui.hackInit()
+
 	tui.startTuiApp()
 
 	return tui
@@ -59,6 +61,11 @@ func (t *tui) Run() {
 	if err := t.app.Run(); err != nil {
 		panic(err)
 	}
+}
+
+func (t *tui) hackInit() {
+	attachInspectBehaviors(t.commandsView["inspect"], t.appState)
+	attachSearchViewBehaviors(t.commandsView["search"], t.appState)
 }
 
 func (t *tui) initTui() {
@@ -72,11 +79,12 @@ func (t *tui) buildCommandsList() {
 	}
 	sort.Sort(sort.Reverse(sort.StringSlice(t.registryOrder)))
 
-	t.commands = tview.NewList().ShowSecondaryText(false).SetSelectedFunc(func(i int, main string, secondary string, shortcut rune) {
-		name := t.registryOrder[i]
-		t.pages.SwitchToPage(name)
-		t.app.SetFocus(t.commandsView[name].view)
-	})
+	t.commands = tview.NewList().ShowSecondaryText(false)
+
+	for _, k := range t.registryOrder {
+		c := t.appState.registry[k]
+		t.commands.AddItem(c.name, "", 0, nil)
+	}
 
 	t.commands.SetTitle("Functions").SetBorder(true).SetInputCapture(setTviewInputMethod)
 }
@@ -84,9 +92,14 @@ func (t *tui) buildCommandsList() {
 func (t *tui) buildCommandsViews() {
 	for _, k := range t.registryOrder {
 		c := t.appState.registry[k]
-		t.commands.AddItem(c.name, "", 0, nil)
 		t.commandsView[c.name] = c.getCommandView(t.appState)
 	}
+
+	t.commands.SetSelectedFunc(func(i int, main string, secondary string, shortcut rune) {
+		name := t.registryOrder[i]
+		t.pages.SwitchToPage(name)
+		t.app.SetFocus(t.commandsView[name].view)
+	})
 
 }
 
@@ -104,47 +117,6 @@ func (t *tui) startTuiApp() {
 
 		// Add interaction callbacks
 		switch v := cv.view.(type) {
-		case *tview.InputField:
-			v.SetDoneFunc(func(key tcell.Key) {
-				if key == tcell.KeyEnter {
-					searchText := v.GetText()
-					data, err := c.callback(conf, searchText)
-					if err != nil {
-						panic(err)
-					}
-					cv.UpdateResultView(data)
-
-					// TODO: attaching the results navigation here feels like a bit of a hack
-					if rv, ok := cv.resultView.(*tview.TextView); ok {
-						rv.SetDoneFunc(func(key tcell.Key) {
-							if key == tcell.KeyEsc {
-								t.app.SetFocus(t.commands)
-							}
-							t.app.SetFocus(cv.view)
-						})
-					}
-					if rv, ok := cv.resultView.(*tview.List); ok {
-						rv.SetDoneFunc(func() {
-							if key == tcell.KeyEsc {
-								t.app.SetFocus(cv.view)
-							}
-						}).SetSelectedFunc(func(i int, main string, secondary string, shortcut rune) {
-							t.tuiState.currentBook = main
-							if iv, ok := t.commandsView["inspect"].view.(*tview.InputField); ok {
-								iv.SetText(main)
-							}
-							t.app.SetFocus(t.commands)
-						})
-					}
-					// end hack
-
-					flexLayout.AddItem(cv.resultView, 0, 3, false)
-					t.app.SetFocus(cv.resultView)
-				} else if key == tcell.KeyEsc {
-					t.app.SetFocus(t.commands)
-				}
-			})
-
 		// This is the default primatitive, if there is no interactivity just call the command callback immediately.
 		case *tview.Box:
 			v.SetFocusFunc(func() {

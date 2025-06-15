@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/gdamore/tcell/v2"
 	"github.com/rivo/tview"
 )
 
@@ -69,10 +70,47 @@ func updateSearchResultView(t tview.Primitive, data []byte) {
 }
 
 func newSearchCommandView(conf *config) *commandView {
-	return &commandView{
+	cv := &commandView{
 		view:             searchView(conf),
 		updateView:       updateSearchView,
 		resultView:       searchResultView(conf),
 		updateResultView: updateSearchResultView,
 	}
+
+	return cv
+}
+
+// TODO: Update this to use an event loop
+func attachSearchViewBehaviors(cv *commandView, conf *config) {
+	c := conf.registry["search"]
+	t := conf.tui
+	if search, ok := cv.view.(*tview.InputField); ok {
+		search.SetDoneFunc(func(key tcell.Key) {
+			if key == tcell.KeyEnter {
+				searchText := search.GetText()
+				data, err := c.callback(conf, searchText)
+				if err != nil {
+					panic(err)
+				}
+				cv.UpdateResultView(data)
+				t.app.SetFocus(cv.resultView)
+			} else if key == tcell.KeyEsc {
+				t.app.SetFocus(t.commands)
+			}
+		})
+	}
+	if list, ok := cv.resultView.(*tview.List); ok {
+		list.SetDoneFunc(func() {
+			t.app.SetFocus(cv.view)
+		}).SetSelectedFunc(func(i int, main string, secondary string, shortcut rune) {
+			// t.tuiState.currentBook = main
+			// TODO: update state & build message to let the inspect command know it needs to update
+			if iv, ok := t.commandsView["inspect"].view.(*tview.InputField); ok {
+				iv.SetText(main)
+			}
+			t.app.SetFocus(t.commands)
+		})
+
+	}
+
 }
