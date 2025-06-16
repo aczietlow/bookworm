@@ -50,6 +50,7 @@ func NewTui(conf *config) *tui {
 	// Actually use DI if that's the route we want to go
 	conf.tui = tui
 
+	// TODO: b/c the behaviors require all commandViews to be initialized we have to attach done behaviors after everything is initialized
 	tui.hackInit()
 
 	tui.startTuiApp()
@@ -145,15 +146,6 @@ func (t *tui) startTuiApp() {
 	}
 
 	t.app.SetRoot(t.pages, true).SetFocus(t.pages)
-}
-
-func setTviewInputMethod(event *tcell.EventKey) *tcell.EventKey {
-	if event.Rune() == 'j' {
-		return tcell.NewEventKey(tcell.KeyDown, rune(0), tcell.ModNone)
-	} else if event.Rune() == 'k' {
-		return tcell.NewEventKey(tcell.KeyUp, rune(0), tcell.ModNone)
-	}
-	return event
 }
 
 func registerCommands() map[string]*cliCommand {

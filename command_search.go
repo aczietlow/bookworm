@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"strings"
+	"time"
 
 	"github.com/gdamore/tcell/v2"
 	"github.com/rivo/tview"
@@ -25,10 +26,15 @@ func commandSearch(conf *config, args ...string) ([]byte, error) {
 		if len(book.AuthorName) > 0 {
 			authorName = book.AuthorName[0]
 		}
-		output += fmt.Sprintf("%s | %s by %s\n", book.Key, book.Title, authorName)
+		output += fmt.Sprintf("%s | %s by %s\n", extractWorkID(book.Key), book.Title, authorName)
 	}
 
 	return []byte(output), nil
+}
+
+func extractWorkID(path string) string {
+	parts := strings.Split(path, "/")
+	return strings.TrimSpace(parts[len(parts)-1])
 }
 
 func solrQueryString(q string) string {
@@ -63,7 +69,7 @@ func updateSearchResultView(t tview.Primitive, data []byte) {
 		for _, r := range results {
 			text := strings.Split(r, "|")
 			if len(text) > 1 {
-				tv.AddItem(text[0], text[1], 0, nil)
+				tv.AddItem(strings.TrimSpace(text[0]), text[1], 0, nil)
 			}
 		}
 	}
@@ -80,6 +86,9 @@ func newSearchCommandView(conf *config) *commandView {
 	return cv
 }
 
+func spinner(d time.Duration) {
+}
+
 // TODO: Update this to use an event loop
 func attachSearchViewBehaviors(cv *commandView, conf *config) {
 	c := conf.registry["search"]
@@ -88,17 +97,61 @@ func attachSearchViewBehaviors(cv *commandView, conf *config) {
 		search.SetDoneFunc(func(key tcell.Key) {
 			if key == tcell.KeyEnter {
 				searchText := search.GetText()
-				data, err := c.callback(conf, searchText)
+				done := make(chan struct{})
+				var data []byte
+				var err error
+
+				go func() {
+					var callbackErr error
+					data, callbackErr = c.callback(conf, searchText)
+					if callbackErr != nil {
+						err = callbackErr
+					}
+					close(done)
+				}()
+
 				if err != nil {
 					panic(err)
 				}
-				cv.UpdateResultView(data)
+
+				// Spin to win
+				go func() {
+					spinner := `-/|\`
+					i := 0
+					for {
+						select {
+						case <-done:
+							return
+						default:
+							r := spinner[i%len(spinner)]
+							t.app.QueueUpdateDraw(func() {
+								cv.UpdateResultView([]byte{r})
+							})
+							i++
+							time.Sleep(100 * time.Millisecond)
+						}
+					}
+				}()
+
+				go func() {
+					<-done
+					t.app.QueueUpdateDraw(func() {
+						if err != nil {
+							cv.UpdateResultView([]byte("Error: " + err.Error()))
+						} else {
+							cv.UpdateResultView(data)
+						}
+					})
+				}()
+
+				// cv.UpdateResultView(data)
 				t.app.SetFocus(cv.resultView)
 			} else if key == tcell.KeyEsc {
 				t.app.SetFocus(t.commands)
 			}
 		})
 	}
+
 	if list, ok := cv.resultView.(*tview.List); ok {
 		list.SetDoneFunc(func() {
 			t.app.SetFocus(cv.view)

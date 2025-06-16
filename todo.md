@@ -19,6 +19,8 @@
 - [x] bootstrap 2 table layout
 - [x] Display the out of commands in right talbe pane 
 - [x] Refactor PoC tui logic from main() into appropraite locations
+- [ ] abract attach behaviors
+  - figure out a solution for "spinners" when not using TextView primitives. maybe a modal
 - [ ] unbreak input capture that allows user to esc from result pane back to view pane
 - [ ] refactor command registry
   - need structs defined for each commandView since each will have its own udpate() and updateResult()

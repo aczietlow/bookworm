@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"time"
 
 	"github.com/gdamore/tcell/v2"
 	"github.com/rivo/tview"
@@ -70,6 +71,66 @@ func newInspectCommandView(conf *config) *commandView {
 
 func attachInspectBehaviors(cv *commandView, conf *config) {
 	t := conf.tui
+	c := conf.registry["inspect"]
+	if search, ok := cv.view.(*tview.InputField); ok {
+		search.SetDoneFunc(func(key tcell.Key) {
+			if key == tcell.KeyEnter {
+				searchText := search.GetText()
+				done := make(chan struct{})
+				var data []byte
+				var err error
+
+				go func() {
+					var callbackErr error
+					data, callbackErr = c.callback(conf, searchText)
+					if callbackErr != nil {
+						err = callbackErr
+					}
+					close(done)
+				}()
+
+				if err != nil {
+					panic(err)
+				}
+
+				// Spin to win
+				go func() {
+					spinner := `-/|\`
+					i := 0
+					for {
+						select {
+						case <-done:
+							return
+						default:
+							r := spinner[i%len(spinner)]
+							t.app.QueueUpdateDraw(func() {
+								cv.UpdateResultView([]byte{r})
+							})
+							i++
+							time.Sleep(100 * time.Millisecond)
+						}
+					}
+				}()
+
+				go func() {
+					<-done
+					t.app.QueueUpdateDraw(func() {
+						if err != nil {
+							cv.UpdateResultView([]byte("Error: " + err.Error()))
+						} else {
+							cv.UpdateResultView(data)
+						}
+					})
+				}()
+
+				// cv.UpdateResultView(data)
+				t.app.SetFocus(cv.resultView)
+			} else if key == tcell.KeyEsc {
+				t.app.SetFocus(t.commands)
+			}
+		})
+	}
+
 	if results, ok := cv.resultView.(*tview.TextView); ok {
 		results.SetDoneFunc(func(key tcell.Key) {
 			if key == tcell.KeyEsc {
