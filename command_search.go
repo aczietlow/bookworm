@@ -28,7 +28,6 @@ func commandSearch(conf *config, args ...string) ([]byte, error) {
 		}
 		output += fmt.Sprintf("%s | %s by %s\n", extractWorkID(book.Key), book.Title, authorName)
 	}
-	time.Sleep(3 * time.Second)
 
 	return []byte(output), nil
 }
@@ -128,6 +127,7 @@ func attachSearchViewBehaviors(cv *commandView, conf *config) {
 							return
 						default:
 							r := spinner[i%len(spinner)]
+							// Queue Update Draw lets go routines outside the main thread make changes a view
 							t.app.QueueUpdateDraw(func() {
 								cv.UpdateResultView([]byte{r})
 							})
@@ -148,7 +148,6 @@ func attachSearchViewBehaviors(cv *commandView, conf *config) {
 					})
 				}()
 
-				// cv.UpdateResultView(data)
 				t.app.SetFocus(cv.resultView)
 			} else if key == tcell.KeyEsc {
 				t.app.SetFocus(t.commands)
