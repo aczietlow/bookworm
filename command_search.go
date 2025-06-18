@@ -28,6 +28,7 @@ func commandSearch(conf *config, args ...string) ([]byte, error) {
 		}
 		output += fmt.Sprintf("%s | %s by %s\n", extractWorkID(book.Key), book.Title, authorName)
 	}
+	time.Sleep(3 * time.Second)
 
 	return []byte(output), nil
 }
@@ -65,11 +66,14 @@ func searchResultView(conf *config) tview.Primitive {
 
 func updateSearchResultView(t tview.Primitive, data []byte) {
 	if tv, ok := t.(*tview.List); ok {
+		tv.Clear()
 		results := strings.Split(string(data), "\n")
 		for _, r := range results {
 			text := strings.Split(r, "|")
 			if len(text) > 1 {
 				tv.AddItem(strings.TrimSpace(text[0]), text[1], 0, nil)
+			} else if len(text) == 1 {
+				tv.AddItem(strings.TrimSpace(text[0]), "", 0, nil)
 			}
 		}
 	}
