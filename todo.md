@@ -28,3 +28,4 @@
 - [ ] build a factory that allows for easier registering of command 
 - [x] add architecture.md doc
 - [ ] Add a spinner when fetching data from the api 
+- [ ] Learn more about ELM pattern
