@@ -36,3 +36,34 @@ func viewInspect(conf *config) tview.Primitive {
 
 	return search
 }
+
+type inspectModel struct {
+	id          string
+	tview       tview.Primitive
+	tviewResult tview.Primitive
+}
+
+type inspectQuery string
+
+func initInspect() model {
+	inspect := tview.NewInputField().
+		SetLabel("Open Library ID").
+		SetFieldWidth(20)
+	inspect.SetTitle("Inspect").SetBorder(true)
+
+	return inspectModel{
+		tview: inspect,
+	}
+}
+
+func (im inspectModel) update(conf *config, message msg) {
+	switch msg := message.(type) {
+	case inspectQuery:
+		id := string(msg)
+		im.id = id
+	}
+}
+
+func (im inspectModel) view(conf *config) tview.Primitive {
+	return im.tview
+}

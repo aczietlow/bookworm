@@ -29,3 +29,6 @@
 - [x] add architecture.md doc
 - [ ] Add a spinner when fetching data from the api 
 - [ ] Learn more about ELM pattern
+
+## Updated pass 
+- [ ] try to remove global state from getting called in the all the commands_xx

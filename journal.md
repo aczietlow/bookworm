@@ -1,44 +1,12 @@
-package main
+2025.11.16
 
-import (
-	"fmt"
-	"reflect"
+Trying to work on a refactor
 
-	"github.com/aczietlow/bookworm/pkg/openlibraryapi"
-	"github.com/gdamore/tcell/v2"
-	"github.com/rivo/tview"
-)
-
-var registry map[string]cliCommand
-
-type config struct {
-	apiClient openlibraryapi.Client
-	tui       tui
-	registry  map[string]cliCommand
-}
-
-type cliCommand struct {
-	name        string
-	description string
-	callback    func(*config, ...string) (string, error)
-	view        func(*config) tview.Primitive
-	model       model
-}
-
-func startCli(conf *config) {
-	startTuiApp(conf)
-	if err := conf.tui.app.Run(); err != nil {
-		panic(err)
-	}
-}
-
-// our init command
-func startTuiApp(conf *config) {
+```go 
 	app := conf.tui.app
 	pages := conf.tui.pages
 	registry := conf.registry
 
-	// TODO: This might be the dumbest way of tracking this state.
 	var views []*tview.Primitive
 	var registryOrder []string
 	for k := range registry {
@@ -60,27 +28,11 @@ func startTuiApp(conf *config) {
 			app.Draw()
 		})
 	results.SetTitle("Results").SetBorder(true)
+
 	for i, k := range registryOrder {
 		c := registry[k]
-
-		model := c.model
-		if c.model != nil {
-			m := c.model
-			if sm, ok := m.(*searchModel); ok {
-				model = *sm
-			}
-		}
-
-		fmt.Printf("name:%v\n", c.name)
 		commands.AddItem(c.name, "", 0, nil)
-
 		view := c.view(conf)
-
-		// Overriding with new functionality
-		if c.model != nil {
-			view = model.view(conf)
-		}
-
 		views = append(views, &view)
 
 		switch v := view.(type) {
@@ -88,24 +40,13 @@ func startTuiApp(conf *config) {
 			v.SetDoneFunc(func(key tcell.Key) {
 				// TODO: Only using reflection to check if model exists. Will remove this when every review has a model by default
 				if !reflect.ValueOf(c.model).IsZero() {
-					// TODO: push this to the command definition, each command should be able to define this themself.
 					if key == tcell.KeyEnter {
 						searchText := v.GetText()
-						c.model.update(conf, searchText)
-
-						// for _, book := range c.model.{
-						// 	authorName := "N/A"
-						// 	if len(book.AuthorName) > 0 {
-						// 		authorName = book.AuthorName[0]
-						// 	}
-						// 	output += fmt.Sprintf("%s | %s by %s\n", book.Key, book.Title, authorName)
-						// }
 
 						result, err := c.callback(conf, searchText)
 						if err != nil {
 							panic(err)
 						}
-
 						results.SetText(fmt.Sprintf("%s", result))
 					} else if key == tcell.KeyEsc {
 						app.SetFocus(commands)
@@ -153,8 +94,27 @@ func startTuiApp(conf *config) {
 	})
 
 	app.SetRoot(pages, true).SetFocus(pages)
-}
+```
 
-func viewCommandPane() {
+I want to be able to define tview components in a way that I can define more "commands". I want the tview components to preform some logic, and allow other tviews to update if its something they care about.
 
-}
+e.g. I want the search command to fetch results, and update have the search results page update, when the command completes.
+
+Current implementation assumes that the type of tview component will all behave the same, and have the same resutls component. e.g. the all `*tview.InputField` assume a callback with a single string input, and passes the whole app state. It also assumes that the updates are meant for a `tview.TextView` component. 
+
+I want to define new commands, each that sets its own view (a tview component), a model that tracks the user input and results of the command
+
+Attempting to start with the search command
+
+What I'm finding is that tview components want to hold the state and view of the component. i.e.
+
+```go
+	results := tview.NewTextView().
+		SetChangedFunc(func() {
+			app.Draw()
+		})
+```
+
+I want the command model to control that flow.
+
+Trying to implement elm like architecture into this. I want to replace all the custom logic with just command.model.update() which I can use to call command.model.view() with newly painted tview.Primitives.
